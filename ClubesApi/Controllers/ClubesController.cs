@@ -69,7 +69,7 @@ namespace ClubesApi.Controllers
         [Authorize] 
         public IActionResult Delete(int id)
         {
-            var success = _clubRepository.Delete(id);
+            var success = _clubRepository.Deactivate(id);
 
             if (success)
             {

@@ -45,7 +45,7 @@ namespace ClubesApi.Repositories
         public List<Club> GetAll()
         {
             var clubes = new List<Club>();
-            var sql = "SELECT ClubId, Nombre, CantidadSocios, CantidadTitulos, FechaFundacion, UbicacionEstadio, NombreEstadio FROM dbo.Club";
+            var sql = "SELECT ClubId, Nombre, CantidadSocios, CantidadTitulos, FechaFundacion, UbicacionEstadio, NombreEstadio, IsActive FROM dbo.Club WHERE IsActive = 1";
 
             using (var connection = new SqlConnection(_connectionString))
             using (var command = new SqlCommand(sql, connection))
@@ -64,7 +64,7 @@ namespace ClubesApi.Repositories
 
         public Club? GetById(int id)
         {
-            var sql = "SELECT ClubId, Nombre, CantidadSocios, CantidadTitulos, FechaFundacion, UbicacionEstadio, NombreEstadio FROM dbo.Club WHERE ClubId = @Id";
+            var sql = "SELECT ClubId, Nombre, CantidadSocios, CantidadTitulos, FechaFundacion, UbicacionEstadio, NombreEstadio, IsActive FROM dbo.Club WHERE ClubId = @Id AND IsActive = 1";
 
             using (var connection = new SqlConnection(_connectionString))
             using (var command = new SqlCommand(sql, connection))
@@ -108,9 +108,9 @@ namespace ClubesApi.Repositories
             }
         }
 
-        public bool Delete(int id)
+        public bool Deactivate(int id)
         {
-            var sql = "DELETE FROM dbo.Club WHERE ClubId = @Id";
+            var sql = "UPDATE dbo.Club SET IsActive = 0 WHERE ClubId = @Id";
 
             using (var connection = new SqlConnection(_connectionString))
             using (var command = new SqlCommand(sql, connection))
@@ -131,7 +131,8 @@ namespace ClubesApi.Repositories
                 CantidadTitulos = reader.GetInt32(reader.GetOrdinal("CantidadTitulos")),
                 FechaFundacion = reader.GetDateTime(reader.GetOrdinal("FechaFundacion")),
                 UbicacionEstadio = reader.IsDBNull(reader.GetOrdinal("UbicacionEstadio")) ? null : reader.GetString(reader.GetOrdinal("UbicacionEstadio")),
-                NombreEstadio = reader.IsDBNull(reader.GetOrdinal("NombreEstadio")) ? null : reader.GetString(reader.GetOrdinal("NombreEstadio"))
+                NombreEstadio = reader.IsDBNull(reader.GetOrdinal("NombreEstadio")) ? null : reader.GetString(reader.GetOrdinal("NombreEstadio")),
+                IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive"))
             };
         }
     }

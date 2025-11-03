@@ -9,5 +9,6 @@
         public DateTime FechaFundacion { get; set; }
         public string? UbicacionEstadio { get; set; }
         public string? NombreEstadio { get; set; }
+        public bool IsActive { get; set; }
     }
 }
