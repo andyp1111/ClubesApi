@@ -1,53 +1,69 @@
-using Microsoft.Data.SqlClient;
-using ClubesApi.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.AspNetCore.Authorization;
-using System;
-
-var jwtSecret = "01234567890123456789012345678901";
+using TrabajoProyecto.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("AllowAll", p => p
+        .AllowAnyOrigin()
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .SetPreflightMaxAge(TimeSpan.FromHours(1))
+    );
+});
 
-var connectionString = builder.Configuration.GetConnectionString("ClubesDBConnection");
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKey_ChangeMe_123!";
+var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
-var finalConnectionString = connectionString ?? string.Empty;
-
-builder.Services.AddScoped<ClubRepository>(serviceProvider =>
-    new ClubRepository(finalConnectionString)
-);
-
-builder.Services.AddScoped<DirigenteRepository>(serviceProvider =>
-    new DirigenteRepository(finalConnectionString)
-);
-
-builder.Services.AddScoped<SocioRepository>(serviceProvider =>
-    new SocioRepository(finalConnectionString)
-);
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = "TP_WebAPI_Clubes",
-            ValidAudience = "TP_WebAPI_Clubes_Clients",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "ClubesApiIssuer",
+        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "ClubesApiAudience",
+        IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+        ClockSkew = TimeSpan.FromSeconds(5)
+    };
+});
 
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<Db>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Clubes API (ADO.NET)", Version = "v1" });
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Ingrese 'Bearer {token}'",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+    };
+    c.AddSecurityDefinition("Bearer", securityScheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement { { securityScheme, Array.Empty<string>() } });
+});
 
 var app = builder.Build();
+
+app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
 {
