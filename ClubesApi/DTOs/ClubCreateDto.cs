@@ -16,5 +16,8 @@ namespace ClubesApi.DTOs
 
         [MaxLength(100)]
         public string? NombreEstadio { get; set; }
+
+        public int CantidadSocios { get; set; }
+        public int CantidadTitulos { get; set; }
     }
 }
